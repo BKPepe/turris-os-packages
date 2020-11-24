@@ -77,7 +77,7 @@ fix_boot_scr() {
     [ -n "$dev" ] || return
     local tmpdir="$(mktemp -d)"
     [ -n "$tmpdir" ] || die "Can't create a temp directory!"
-    mount "$dev" "$tmpdir" || { rmdir "$tmpdir"; die "Can't mount root filesystem" }
+    mount "$dev" "$tmpdir" || { rmdir "$tmpdir"; die "Can't mount root filesystem"; }
     if [ \! -e "$tmpdir"/boot.scr ]; then
         ln -sf @/boot/boot.scr "$tmpdir"/boot.scr || {
             umount "$tmpdir"
