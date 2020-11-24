@@ -1,5 +1,6 @@
 #!/bin/sh
 DEVEL=""
+VERBOSE=""
 SECURE_FIRMWARE="secure-firmware.bin"
 SECURE_FIRMWARE_PART=""
 UBOOT="uboot"
@@ -9,37 +10,58 @@ RESCUE_PART=""
 DTB="dtb"
 DTB_PART=""
 
+. "/usr/share/nor-update/config.sh"
+
 print_help() {
     echo "Usage:"
-    echo "    nor-update [-d]"
+    echo "    nor-update [-d] [-v]"
     echo
     echo "Options:"
     echo "    -d   Use devel version - bleeding edge, but might brick your device"
+    echo "    -v   Be verbose about what is going on"
     echo "    -h   Show help"
 }
 
 while [ -n "$1" ]; do
     case "$1" in
         "-d") DEVEL="y";;
-        "-h") print_help;;
+        "-v") VERBOSE="y";;
+        "-h") print_help
+              exit 0
+              ;;
         *) echo "Invalid usage!!!"
            print_help
+           exit 1
            ;;
     esac
     shift
 done
 
 flash() {
+    local flashing="$1"
+    shift
     local part="$1"
     shift
+    [ -n "part" ] || return
+
+    v_echo "Searching for suitable firmware for '$flashing' partition"
 
     while [ -n "$1" ] && [ \! -r "$1" ]; do
         shift
     done
 
-    if [ -r "$1" ] && [ -c "/dev/$part" ]; then
+    if [ \! -r "$1" ]; then
+        echo "Can't find anything to flash to '$flashing' partition"
+        return
+    fi
+
+    if [ -c "/dev/$part" ]; then
+        v_echo "Flashing $flashing: $1 -> /dev/$part"
         mtd verify "$1" "/dev/$part" || \
-            mtd -e "/dev/$part" write "$1" "/dev/$part"
+            mtd -e "/dev/$part" write "$1" "/dev/$part" || \
+            die "Flashing '$flashing' partition (/dev/$part) failed!"
+    else
+        die "/dev/$part is missing!"
     fi
 }
 
@@ -48,19 +70,29 @@ die() {
     exit 1
 }
 
+# We need boot.scr in root of Btrfs partition to be symlink to @ subvolume to be able to boot
 fix_boot_scr() {
     local dev="$(sed -n 's|^\(/dev/[a-z0-9]*\) / btrfs .*|\1|p' /proc/mounts)"
     # Is root on btrfs?
     [ -n "$dev" ] || return
     local tmpdir="$(mktemp -d)"
     [ -n "$tmpdir" ] || die "Can't create a temp directory!"
-    mount "$dev" "$tmpdir" || die "Can't mount root filesystem"
-    [ -e "$tmpdir"/boot.scr ] || ln -sf @/boot/boot.scr "$tmpdir"/boot.scr || die "Can't create boot.scr symlink"
+    mount "$dev" "$tmpdir" || { rmdir "$tmpdir"; die "Can't mount root filesystem" }
+    if [ \! -e "$tmpdir"/boot.scr ]; then
+        ln -sf @/boot/boot.scr "$tmpdir"/boot.scr || {
+            umount "$tmpdir"
+            rmdir "$tmpdir"
+            die "Can't create boot.scr symlink"
+        }
+    fi
     umount "$tmpdir"
     rmdir "$tmpdir"
 }
 
-. "/usr/share/nor-update/config.sh"
+# Echo that works only in verbose mode
+v_echo() {
+    [ -z "$VERBOSE" ] || echo "$@"
+}
 
 fix_boot_scr
 
@@ -68,17 +100,17 @@ fix_boot_scr
 cd "/usr/share/nor-update/"
 
 if [ -z "$DEVEL" ]; then
-    flash "$SECURE_FIRMWARE_PART" "$SECURE_FIRMWARE"
-    flash "$UBOOT_PART" "$UBOOT"
-    flash "$RESCUE_PART" "$RESCUE"
-    flash "$DTB_PART" "$DTB"
+    flash "secure firmware" "$SECURE_FIRMWARE_PART" "$SECURE_FIRMWARE"
+    flash "U-Boot" "$UBOOT_PART" "$UBOOT"
+    flash "rescue system" "$RESCUE_PART" "$RESCUE"
+    flash "dtb" "$DTB_PART" "$DTB"
     # Backward compatibility with Turris 1.X, to be dropped
     for m in mtd[0-9]; do
-        flash "$m" "$m"
+        flash "$m" "$m" "$m"
     done
 else
-    flash "$SECURE_FIRMWARE_PART" "/usr/share/$DEVICE/secure-image-devel"
-    flash "$UBOOT_PART" "/usr/share/$DEVICE/uboot-devel" "$UBOOT"
-    flash "$RESCUE_PART" "/usr/share/rescue-image/image.fit.lzma" "$RESCUE"
-    flash "$DTB_PART" "$(ls -1 /boot | grep '.*turris.*.dtb' | head -n1)" "$DTB"
+    flash "secure firmware" "$SECURE_FIRMWARE_PART" "/usr/share/$DEVICE/secure-image-devel"
+    flash "U-Boot" "$UBOOT_PART" "/usr/share/$DEVICE/uboot-devel" "$UBOOT"
+    flash "rescue system" "$RESCUE_PART" "/usr/share/rescue-image/image.fit.lzma" "$RESCUE"
+    flash "dtb" "$DTB_PART" "$(ls -1 /boot *turris*.dtb | head -n1)" "$DTB"
 fi

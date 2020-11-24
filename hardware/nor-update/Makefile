@@ -17,12 +17,12 @@ include $(INCLUDE_DIR)/package.mk
 
 define Package/turris-nor-update
   TITLE:=NOR update for Turris routers
-  DEPENDS:=+mtd
+  DEPENDS:=+mtd +turris-nor-update-firmware
 endef
 
 Build/Compile:=:
 
-define Package/turris-nor-update-devel-data
+define Package/turris-nor-update-devel-firmware
   TITLE:=Data files for nor-update (development version)
   DEPENDS:=+turris-nor-update +rescue-image \
 		  +@TARGET_mvebu_cortexa9_DEVICE_cznic_turris-omnia:u-boot-omnia \
@@ -44,15 +44,14 @@ DEVICE:=unknown
 DATA_VERSION:=0.0
 endif
 
-define Package/turris-nor-update-data
+define Package/turris-nor-update-firmware
   TITLE:=Data files for nor-update
-  DEPENDS:=+turris-nor-update
   VERSION:=$(DATA_VERSION)
 endef
 
-Package/turris-nor-update-devel-data/install:=:
+Package/turris-nor-update-devel-firmware/install:=:
 
-define Package/turris-nor-update-data/install
+define Package/turris-nor-update-firmware/install
 	$(INSTALL_DIR) $(1)/usr/share/nor-update/
 	$(INSTALL_DATA) ./files/$(DEVICE)/* $(1)/usr/share/nor-update/
 endef
@@ -63,5 +62,5 @@ define Package/turris-nor-update/install
 endef
 
 $(eval $(call BuildPackage,turris-nor-update))
-$(eval $(call BuildPackage,turris-nor-update-devel-data))
-$(eval $(call BuildPackage,turris-nor-update-data))
+$(eval $(call BuildPackage,turris-nor-update-devel-firmware))
+$(eval $(call BuildPackage,turris-nor-update-firmware))
