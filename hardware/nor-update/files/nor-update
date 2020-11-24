@@ -22,7 +22,7 @@ while [ -n "$1" ]; do
     case "$1" in
         "-d") DEVEL="y";;
         "-h") print_help;;
-        *) echo "Invlaid usage!!!"
+        *) echo "Invalid usage!!!"
            print_help
            ;;
     esac
