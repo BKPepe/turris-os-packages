@@ -39,9 +39,9 @@ done
 
 flash() {
     local flashing="$1"
-    shift
-    local part="$1"
-    shift
+    local part="$2"
+    shift 2
+
     [ -n "part" ] || return
 
     v_echo "Searching for suitable firmware for '$flashing' partition"
