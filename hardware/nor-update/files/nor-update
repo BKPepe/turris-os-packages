@@ -24,7 +24,7 @@ while [ -n "$1" ]; do
         "-h") print_help;;
         *) echo "Invlaid usage!!!"
            print_help
-           ;;;
+           ;;
     esac
     shift
 done
