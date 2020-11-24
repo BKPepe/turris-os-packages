@@ -49,9 +49,12 @@ flash() {
 
     if [ -c "/dev/$part" ]; then
         v_echo "Checking and flashing '$flashing' partition: $1 -> /dev/$part"
-        mtd verify "$1" "/dev/$part" || \
+        if mtd verify "$1" "/dev/$part"; then
+            v_echo "Partition with $flashing was up to date already."
+        else
             mtd -e "/dev/$part" write "$1" "/dev/$part" || \
             die "Flashing '$flashing' partition (/dev/$part) failed!"
+        fi
     else
         die "/dev/$part is missing!"
     fi
