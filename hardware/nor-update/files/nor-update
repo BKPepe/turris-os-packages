@@ -1,14 +1,23 @@
 #!/bin/sh
 DEVEL=""
 VERBOSE=""
+
 SECURE_FIRMWARE="secure-firmware.bin"
 SECURE_FIRMWARE_PART=""
+SECURE_FIRMWARE_DEVEL=""
+
 UBOOT="uboot"
 UBOOT_PART=""
+UBOOT_DEVEL=""
+
 RESCUE="rescue"
 RESCUE_PART=""
+RESCUE_DEVEL="/usr/share/rescue-image/image.fit.lzma"
+
 DTB="dtb"
 DTB_PART=""
+DTB_DEVEL=""
+
 
 . "/usr/share/nor-update/config.sh"
 
@@ -22,29 +31,12 @@ print_help() {
     echo "    -h   Show help"
 }
 
-while [ -n "$1" ]; do
-    case "$1" in
-        "-d") DEVEL="y";;
-        "-v") VERBOSE="y";;
-        "-h") print_help
-              exit 0
-              ;;
-        *) echo "Invalid usage!!!"
-           print_help
-           exit 1
-           ;;
-    esac
-    shift
-done
-
 flash() {
     local flashing="$1"
     local part="$2"
     shift 2
 
     [ -n "part" ] || return
-
-    v_echo "Searching for suitable firmware for '$flashing' partition"
 
     while [ -n "$1" ] && [ \! -r "$1" ]; do
         shift
@@ -56,7 +48,7 @@ flash() {
     fi
 
     if [ -c "/dev/$part" ]; then
-        v_echo "Flashing $flashing: $1 -> /dev/$part"
+        v_echo "Checking and flashing '$flashing' partition: $1 -> /dev/$part"
         mtd verify "$1" "/dev/$part" || \
             mtd -e "/dev/$part" write "$1" "/dev/$part" || \
             die "Flashing '$flashing' partition (/dev/$part) failed!"
@@ -68,6 +60,11 @@ flash() {
 die() {
     echo "$1" >&2
     exit 1
+}
+
+# Echo that works only in verbose mode
+v_echo() {
+    [ -z "$VERBOSE" ] || echo "$@" >&2
 }
 
 # We need boot.scr in root of Btrfs partition to be symlink to @ subvolume to be able to boot
@@ -89,28 +86,40 @@ fix_boot_scr() {
     rmdir "$tmpdir"
 }
 
-# Echo that works only in verbose mode
-v_echo() {
-    [ -z "$VERBOSE" ] || echo "$@"
-}
+while [ -n "$1" ]; do
+    case "$1" in
+        "-d") DEVEL="y";;
+        "-v") VERBOSE="y";;
+        "-h") print_help
+              exit 0
+              ;;
+        *) echo "Invalid usage!!!"
+           print_help
+           exit 1
+           ;;
+    esac
+    shift
+done
 
 fix_boot_scr
 
-# To make relative paths work
+# To simplify the configuration so we can use relative paths for parts of the firmware
 cd "/usr/share/nor-update/"
 
-if [ -z "$DEVEL" ]; then
-    flash "secure firmware" "$SECURE_FIRMWARE_PART" "$SECURE_FIRMWARE"
-    flash "U-Boot" "$UBOOT_PART" "$UBOOT"
-    flash "rescue system" "$RESCUE_PART" "$RESCUE"
-    flash "dtb" "$DTB_PART" "$DTB"
-    # Backward compatibility with Turris 1.X, to be dropped
-    for m in mtd[0-9]; do
-        flash "$m" "$m" "$m"
-    done
+if [ -n "$DEVEL" ]; then
+    SECURE_FIRMWARE_DEVEL=""
+    UBOOT_DEVEL=""
+    RESCUE_DEVEL=""
+    DTB_DEVEL=""
 else
-    flash "secure firmware" "$SECURE_FIRMWARE_PART" "/usr/share/$DEVICE/secure-image-devel"
-    flash "U-Boot" "$UBOOT_PART" "/usr/share/$DEVICE/uboot-devel" "$UBOOT"
-    flash "rescue system" "$RESCUE_PART" "/usr/share/rescue-image/image.fit.lzma" "$RESCUE"
-    flash "dtb" "$DTB_PART" "$(ls -1 /boot *turris*.dtb | head -n1)" "$DTB"
+    [ -n "$DTB_DEVEL" ] || DTB_DEVEL="$(ls -1 /boot *turris*.dtb | head -n1)"
 fi
+
+flash "secure firmware" "$SECURE_FIRMWARE_PART" "$SECURE_FIRMWARE_DEVEL" "$SECURE_FIRMWARE"
+flash "U-Boot" "$UBOOT_PART" "$UBOOT_DEVEL" "$UBOOT"
+flash "rescue system" "$RESCUE_PART" "$RESCUE_DEVEL" "$RESCUE"
+flash "dtb" "$DTB_PART" "$DTB_DEVEL" "$DTB"
+# Backward compatibility with Turris 1.X, to be dropped
+for m in mtd[0-9]; do
+    flash "$m" "$m" "$m"
+done
