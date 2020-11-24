@@ -73,7 +73,7 @@ die() {
 # We need boot.scr in root of Btrfs partition to be symlink to @ subvolume to be able to boot
 fix_boot_scr() {
     local dev="$(sed -n 's|^\(/dev/[a-z0-9]*\) / btrfs .*|\1|p' /proc/mounts)"
-    # Is root on btrfs?
+    # Fix is required only for BTRFS. No need to continue if root filesystem is not BTRFS.
     [ -n "$dev" ] || return
     local tmpdir="$(mktemp -d)"
     [ -n "$tmpdir" ] || die "Can't create a temp directory!"
