@@ -87,6 +87,24 @@ include_custom_config() {
 	fi
 }
 
+get_servers() {
+        ipv4_enabled="$1"
+        ipv6_enabled="$2"
+        resolv_conf="$3"
+
+        for ip in $(sed -ne 's/^nameserver \(.*\)/\1/p' "$resolv_conf"| sort -u); do
+                ipv4=$(echo "$ip"|awk -F. 'NF == 4')
+                ipv6=$(echo "$ip"|awk -F: 'NF>4')
+
+                if [ ! -z "$ipv4" ] && [ "$ipv4_enabled" = "1" ] ; then
+                        echo -ne "$ipv4 "
+                fi
+                if [ ! -z "$ipv6" ] && [ "$ipv6_enabled" = "1" ]; then
+                        echo -ne "$ipv6 "
+                fi
+        done
+}
+
 load_uci_config_common() {
 	local interface keyfile verbose port edns_buffer_size net_ipv4 net_ipv6 msg_cache_size do_forward ignore_root_key keep_cache_bool
 	local forward_dns
@@ -186,7 +204,9 @@ load_uci_config_common() {
 		if [ "$do_forward" = "1" ] ; then
 			local SERVERS
 
-			SERVERS=$(sed -ne 's/^nameserver \(.*\)/\1/p' "$resolv_conf_path"| sort -u |head -n 4)
+			# Get IP list for forwarding with respect to net_ipv4/6 setting
+			# Max number of servers used for forwarding is 4
+			SERVERS=$(get_servers "$net_ipv4" "$net_ipv6" "$resolv_conf_path"|head -n 4)
 			if [ "$SERVERS" ] ; then
 				# Slight hack around https://gitlab.nic.cz/knot/knot-resolver/issues/205#note_94566
 				echo "table.insert(policy.special_names, { count = 0, cb = policy.all(" >> $CONFIGFILE
