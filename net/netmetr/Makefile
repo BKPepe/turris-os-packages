@@ -15,6 +15,7 @@ PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://gitlab.nic.cz/turris/netmetr-client.git
 PKG_SOURCE_VERSION:=v$(PKG_VERSION)
 PKG_SOURCE:=netmetr-client-v$(PKG_SOURCE_VERSION).tar.gz
+PKG_MIRROR_HASH:=bb8ad9a2284fe5cd336f234ce5789fcdcede2c2f89db3312ec21553592206b1a
 
 PKG_MAINTAINER:=CZ.NIC <packaging@turris.cz>
 PKG_LICENSE:=GPL-3.0-or-later
