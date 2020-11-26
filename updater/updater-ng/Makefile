@@ -8,7 +8,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=updater-ng
-PKG_VERSION:=67.0.2
+PKG_VERSION:=68.0.0
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
@@ -68,8 +68,6 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/etc/updater/hook_reboot_required
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/pkgupdate/hook_reboot_required/50-create-notification.sh $(1)/etc/updater/hook_reboot_required/50-create-notification.sh
 
-	# Note: this file is not ever used as appropriate one is generated to medkit
-	# it is here only for reference and to make sure that it exists.
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/updater.config $(1)/etc/config/updater
 endef
@@ -77,6 +75,14 @@ endef
 define Package/updater-ng/conffiles
 /etc/updater/conf.d/example.lua
 /etc/config/updater
+endef
+
+define Package/updater-ng/postinst
+if [ -n "$$IPKG_INSTROOT" ] && [ -n "$$BOOTSTRAP_UPDATER_BRANCH" ]; then
+	mkdir -p "$$IPKG_INSTROOT/usr/share/updater"
+	echo "$$BOOTSTRAP_UPDATER_BRANCH" \
+		> "$$IPKG_INSTROOT/usr/share/updater/bootstrap-updater-branch"
+fi
 endef
 
 $(eval $(call BuildPackage,updater-ng))
