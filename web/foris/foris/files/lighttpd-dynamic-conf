@@ -56,7 +56,7 @@ echo "var.foris-$APP.bin = \"/usr/bin/foris\""
 echo "var.foris-$APP.cgi = \"/usr/share/foris/foris-$APP-cgi\""
 echo "var.foris-$APP.scriptname = \"$SCRIPTNAME/$APP\""
 case "$BUS" in
-	ubus|unix)
+	ubus|unix-socket)
 		echo "var.foris-$APP.flags = \"$EXTRA_FLAGS -a $APP -b $BUS --bus-socket $BUS_PATH\""
 		;;
 	mqtt)
