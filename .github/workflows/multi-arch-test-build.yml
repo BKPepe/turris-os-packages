@@ -19,7 +19,7 @@ jobs:
             runtime_test: true
           - arch: x86_64
             runtime_test: true
-          - arch: mips_24k
+          - arch: mips_24kc
             runtime_test: true
 
     steps:
