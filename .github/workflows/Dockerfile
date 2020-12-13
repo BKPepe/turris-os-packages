@@ -1,5 +1,6 @@
 ARG ARCH=x86-64
-FROM openwrtorg/rootfs:$ARCH:TARGET
+ARG VERSION=snapshot
+FROM openwrtorg/rootfs:$ARCH:$VERSION
 
 ADD entrypoint.sh /entrypoint.sh
 
