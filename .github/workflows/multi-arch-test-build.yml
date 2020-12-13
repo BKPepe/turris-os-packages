@@ -19,7 +19,7 @@ jobs:
             runtime_test: true
           - arch: x86_64
             runtime_test: true
-        version: snapshot
+       version: snapshot
 
     steps:
       - uses: actions/checkout@v2
