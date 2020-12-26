@@ -150,22 +150,16 @@ define BuildPlugin
 /etc/lighttpd/conf.d/$(4)-$(1).conf
   endef
 
- ifneq ($(SDK)$(CONFIG_PACKAGE_lighttpd-mod-$(1)),)
   define Package/lighttpd-mod-$(1)/install
 	$(INSTALL_DIR) $$(1)/usr/lib/lighttpd
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/lighttpd/mod_$(1).so $$(1)/usr/lib/lighttpd
-	$(INSTALL_DIR) $$(1)/etc/lighttpd/modules.d
+	$(INSTALL_DIR) $$(1)/etc/lighttpd/modules.d/
 	if [ -f $(PKG_BUILD_DIR)/doc/config/conf.d/$(1).conf ]; then \
-		$(CP) $(PKG_BUILD_DIR)/doc/config/conf.d/$(1).conf $$(1)/etc/lighttpd/modules.d/$(4)-$(1).conf ; \
-		if ! grep -qF 'mod_$(1)' $$(1)/etc/lighttpd/modules.d/$(4)-$(1).conf; then \
-			sed -i "`sed '/^##/ !q' $$(1)/etc/lighttpd/modules.d/$(4)-$(1).conf | wc -l` i\
-server.modules += ( \"mod_$(1)\" )" $$(1)/etc/lighttpd/modules.d/$(4)-$(1).conf ; \
-		fi \
+		$(CP) $(PKG_BUILD_DIR)/doc/config/conf.d/$(1).conf $$(1)/etc/lighttpd/modules.d/$(4)-$(1).load ; \
 	else \
-		echo 'server.modules += ( "mod_$(1)" )' > $$(1)/etc/lighttpd/modules.d/$(4)-$(1).conf ; \
+		echo 'server.modules += ( "mod_$(1)" )' > $$(1)/etc/lighttpd/modules.d/$(4)-$(1).load ; \
 	fi
   endef
- endif
 
   $$(eval $$(call BuildPackage,lighttpd-mod-$(1)))
 endef
