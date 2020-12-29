@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    name: OpenWrt 19.07.x - ${{ matrix.arch }}
+    name: ${{ matrix.arch }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -12,9 +12,13 @@ jobs:
         arch:
           - arm_cortex-a9_vfpv3-d16
           - powerpc_8540
+          - arm_cortex-a9_vfpv3-d16-19.07.5
+          - powerpc_8540-19.07.5
         runtime_test: [false]
         include:
           - arch: aarch64_cortex-a53
+            runtime_test: true
+          - arch: aarch64_cortex-a53-19.07.5
             runtime_test: true
 
     steps:
@@ -39,7 +43,7 @@ jobs:
       - name: Build
         uses: openwrt/gh-action-sdk@v1
         env:
-          ARCH: ${{ matrix.arch }}-19.07.5
+          ARCH: ${{ matrix.arch }}
           FEEDNAME: turrispackages_ci
 
       - name: Move created packages to project dir
